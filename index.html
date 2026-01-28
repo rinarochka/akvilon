@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Аквилон — Call Center Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body { font-family: Inter, Arial, sans-serif; background:#f5f6fa; padding:16px; color:#111; }
+    h1 { font-size:20px; margin:0 0 12px; }
+
+    .tabs { display:flex; gap:10px; margin-bottom:12px; }
+    .tab { background:#fff; border:1px solid #e5e7eb; padding:8px 12px; border-radius:10px; cursor:pointer; font-size:12px; }
+    .tab.active { border-color:#111; font-weight:600; }
+
+    .filters {
+      background:#fff; border-radius:10px; padding:12px; margin-bottom:16px;
+      box-shadow:0 6px 18px rgba(0,0,0,.08);
+      display:flex; gap:12px; align-items:end; flex-wrap:wrap;
+    }
+    .filters label { font-size:12px; display:block; }
+    .filters input { padding:6px; font-size:12px; }
+    button { padding:7px 16px; font-size:12px; cursor:pointer; border:0; border-radius:10px; background:#111; color:#fff; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+
+    .hint { font-size:12px; color:#6b7280; margin-left:6px; }
+    .hidden { display:none; }
+    .grid { display:grid; grid-template-columns:1fr; gap:16px; }
+
+    .card { background:#fff; border-radius:10px; padding:14px; box-shadow:0 6px 18px rgba(0,0,0,.08); }
+    h2 { font-size:15px; margin:0 0 8px; }
+
+    .metrics { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; }
+    .metric { background:#f8fafc; border-radius:8px; padding:10px; font-size:12px; }
+    .metric b { display:block; font-size:16px; }
+
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th, td { padding:8px; border-bottom:1px solid #e5e7eb; vertical-align:top; }
+    th { background:#f1f5f9; text-align:left; }
+    .bad { color:#dc2626; font-weight:600; }
+    .status-bad { color:#dc2626; font-weight:600; }
+    .status-ok { color:#16a34a; font-weight:600; }
+    tr.clickable { cursor:pointer; }
+    tr.clickable:hover { background:#f8fafc; }
+
+    canvas { max-height:260px; }
+
+    /* Modal */
+    .modal-backdrop {
+      position:fixed; inset:0; background:rgba(0,0,0,.35);
+      display:none; align-items:center; justify-content:center;
+      padding:16px;
+    }
+    .modal {
+      width:min(900px, 100%);
+      background:#fff; border-radius:14px; padding:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.25);
+      max-height:85vh; overflow:auto;
+    }
+    .modal-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .modal-title { font-weight:700; font-size:14px; }
+    .modal-close { background:#eef2ff; color:#111; border-radius:10px; padding:8px 10px; border:0; cursor:pointer; }
+    .bubble {
+      border:1px solid #e5e7eb; border-radius:12px; padding:10px; margin:10px 0;
+      background:#fff;
+      white-space:pre-wrap;
+    }
+    .bubble.manager { background:#f8fafc; }
+    .bubble .who { font-weight:700; font-size:12px; margin-bottom:6px; }
+    .meta { font-size:12px; color:#6b7280; margin:8px 0 0; }
+  </style>
+</head>
+
+<body>
+<h1>Аквилон — Call Center Dashboard</h1>
+
+<div class="tabs">
+  <div class="tab active" id="tabDashboard" onclick="switchTab('dashboardTab')">Dashboard</div>
+  <div class="tab" id="tabRegistry" onclick="switchTab('registryTab')">Реестр звонков</div>
+</div>
+
+<div class="filters">
+  <div>
+    <label>Дата с</label>
+    <input type="date" id="dateFrom">
+  </div>
+  <div>
+    <label>Дата по</label>
+    <input type="date" id="dateTo">
+  </div>
+  <button id="btnShow" onclick="showDashboard()">Показать</button>
+  <span class="hint" id="loadHint">Загрузка данных…</span>
+</div>
+
+<!-- DASHBOARD TAB -->
+<div id="dashboardTab">
+  <div id="dashboard" class="grid hidden">
+
+    <div class="card">
+      <h2>Сводные показатели</h2>
+      <div class="metrics" id="metrics"></div>
+    </div>
+
+    <div class="card">
+      <h2>Количество звонков по менеджерам</h2>
+      <canvas id="chartCount"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Средняя оценка по менеджерам</h2>
+      <canvas id="chartAvg"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>% звонков с оценкой ≥ 4</h2>
+      <canvas id="chartGood"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Аналитика по менеджерам</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Менеджер</th>
+            <th>Звонки</th>
+            <th>Средняя оценка</th>
+            <th>% ≥ 4</th>
+            <th>Последний звонок</th>
+            <th>Ср. длит., сек</th>
+            <th>Сервис</th>
+            <th>Продажи</th>
+            <th>Другое</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- REGISTRY TAB -->
+<div id="registryTab" class="hidden">
+  <div class="card">
+    <h2>Реестр звонков (клик по строке → диалог)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>Менеджер</th>
+          <th>Тип</th>
+          <th>Длит., сек</th>
+          <th>Оценка</th>
+          <th>Статус</th>
+        </tr>
+      </thead>
+      <tbody id="registryBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModal(event)">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Звонок</div>
+      <button class="modal-close" onclick="closeModal()">Закрыть</button>
+    </div>
+    <div class="meta" id="modalMeta"></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+  // ===== DOM =====
+  const dateFromEl = document.getElementById("dateFrom");
+  const dateToEl   = document.getElementById("dateTo");
+  const btnShowEl  = document.getElementById("btnShow");
+  const loadHintEl = document.getElementById("loadHint");
+
+  const dashboardWrapEl = document.getElementById("dashboard");
+  const metricsEl   = document.getElementById("metrics");
+  const tableBodyEl = document.getElementById("tableBody");
+  const registryBodyEl = document.getElementById("registryBody");
+
+  const tabDashboardEl = document.getElementById("tabDashboard");
+  const tabRegistryEl  = document.getElementById("tabRegistry");
+
+  const dashboardTabEl = document.getElementById("dashboardTab");
+  const registryTabEl  = document.getElementById("registryTab");
+
+  const modalBackdropEl = document.getElementById("modalBackdrop");
+  const modalTitleEl = document.getElementById("modalTitle");
+  const modalMetaEl  = document.getElementById("modalMeta");
+  const modalBodyEl  = document.getElementById("modalBody");
+
+  // ===== STATE =====
+  let ALL_CALLS = [];
+  let charts = [];
+
+  btnShowEl.disabled = true;
+
+  // ===== LOAD JSON =====
+  fetch("call_registry.json", { cache: "no-store" })
+    .then(r => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(data => {
+      if (!Array.isArray(data)) throw new Error("JSON is not an array");
+      ALL_CALLS = data;
+
+      // выставим диапазон дат из данных (по YYYY-MM-DD)
+      const dates = ALL_CALLS
+        .map(c => c?.datetime ? String(c.datetime).slice(0,10) : null)
+        .filter(Boolean);
+
+      if (!dates.length) {
+        loadHintEl.textContent = "Файл загружен, но в datetime пусто";
+        return;
+      }
+
+      dates.sort();
+      dateFromEl.value = dates[0];
+      dateToEl.value = dates[dates.length - 1];
+
+      loadHintEl.textContent = `ОК: загружено ${ALL_CALLS.length} звонков`;
+      btnShowEl.disabled = false;
+
+      // ✅ СРАЗУ покажем реестр (все звонки)
+      buildRegistry(ALL_CALLS);
+    })
+    .catch(err => {
+      console.error("JSON load error:", err);
+      loadHintEl.textContent = "Ошибка загрузки call_registry.json (проверь сервер и валидность JSON)";
+      alert("Не удалось загрузить call_registry.json. Проверь: http://localhost:8000/call_registry.json");
+    });
+
+  // ===== TABS =====
+  function switchTab(tabId) {
+    if (tabId === "dashboardTab") {
+      dashboardTabEl.classList.remove("hidden");
+      registryTabEl.classList.add("hidden");
+      tabDashboardEl.classList.add("active");
+      tabRegistryEl.classList.remove("active");
+    } else {
+      registryTabEl.classList.remove("hidden");
+      dashboardTabEl.classList.add("hidden");
+      tabRegistryEl.classList.add("active");
+      tabDashboardEl.classList.remove("active");
+    }
+  }
+
+  // ===== HELPERS =====
+  function safeNum(x, def=0) {
+    const n = Number(x);
+    return Number.isFinite(n) ? n : def;
+  }
+
+  function avg(arr) {
+    return arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : 0;
+  }
+
+  function esc(s) {
+    return String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function destroyCharts() {
+    charts.forEach(ch => { try { ch.destroy(); } catch(e){} });
+    charts = [];
+  }
+
+  // ===== FILTER + DASHBOARD =====
+  function showDashboard() {
+    if (!dateFromEl.value || !dateToEl.value) {
+      alert("Выберите диапазон дат");
+      return;
+    }
+
+    const fromDate = dateFromEl.value; // YYYY-MM-DD
+    const toDate   = dateToEl.value;
+
+    const filtered = ALL_CALLS.filter(c => {
+      if (!c?.datetime) return false;
+      const d = String(c.datetime).slice(0,10);
+      return d >= fromDate && d <= toDate;
+    });
+
+    if (!filtered.length) {
+      alert("Нет данных за выбранный период");
+      return;
+    }
+
+    dashboardWrapEl.classList.remove("hidden");
+    switchTab("dashboardTab");
+
+    buildDashboard(filtered);
+    buildRegistry(filtered); // реестр тоже под фильтр
+  }
+
+  // ===== REGISTRY =====
+  function buildRegistry(calls) {
+    registryBodyEl.innerHTML = "";
+
+    calls
+      .slice()
+      .sort((a,b) => new Date(b.datetime) - new Date(a.datetime))
+      .forEach(c => {
+        const score = safeNum(c?.ai?.score, 0);
+        const needs = !!c?.registry?.needs_attention;
+
+        registryBodyEl.insertAdjacentHTML("beforeend", `
+          <tr class="clickable" onclick="openCall('${esc(c.call_id)}')">
+            <td>${esc((c.datetime || "").replace("T", " ").replace("Z",""))}</td>
+            <td>${esc(c.manager || "")}</td>
+            <td>${esc(c.call_type || "")}</td>
+            <td>${esc(c.duration_sec ?? "")}</td>
+            <td class="${score < 4 ? "bad" : ""}">${esc(score)}</td>
+            <td class="${needs ? "status-bad" : "status-ok"}">
+              ${needs ? "⚠ Требует внимания" : "OK"}
+            </td>
+          </tr>
+        `);
+      });
+
+    // если ты хочешь увидеть реестр — переключись на него
+    // switchTab("registryTab");
+  }
+
+  // ===== DASHBOARD (простая версия) =====
+  function buildDashboard(calls) {
+  destroyCharts();
+
+  // группировка по менеджерам
+  const byManager = new Map();
+  for (const c of calls) {
+    const raw = (c.manager || "").trim();
+    const m = raw ? raw : "—";
+    if (!byManager.has(m)) byManager.set(m, []);
+    byManager.get(m).push(c);
+  }
+
+  // ✅ ФИЛЬТР МЕНЕДЖЕРОВ
+  // - не "—"
+  // - не "неизвестный"
+  // - звонков >= 3
+  const managers = Array.from(byManager.entries())
+    .filter(([name, arr]) => {
+      const n = name.toLowerCase();
+      if (name === "—") return false;
+      if (n.includes("неизвест")) return false;
+      if (arr.length < 3) return false;
+      return true;
+    })
+    .map(([name]) => name)
+    .sort();
+
+  if (!managers.length) {
+    dashboardWrapEl.classList.remove("hidden");
+    metricsEl.innerHTML = `<div class="metric">Нет менеджеров, подходящих под условия</div>`;
+    tableBodyEl.innerHTML = "";
+    return;
+  }
+
+  // ===== METRICS (по всем звонкам периода, не по фильтру менеджеров) =====
+  const total = calls.length;
+  const scores = calls.map(c => safeNum(c?.ai?.score, 0));
+  const avgScore = avg(scores);
+  const goodPct = total ? (calls.filter(c => safeNum(c?.ai?.score,0) >= 4).length / total) * 100 : 0;
+  const avgDur = avg(calls.map(c => safeNum(c?.duration_sec, 0)));
+
+  metricsEl.innerHTML = `
+    <div class="metric"><span>Звонков</span><b>${total}</b></div>
+    <div class="metric"><span>Средняя оценка</span><b>${avgScore.toFixed(2)}</b></div>
+    <div class="metric"><span>% ≥ 4</span><b>${goodPct.toFixed(1)}%</b></div>
+    <div class="metric"><span>Средняя длительность</span><b>${avgDur.toFixed(0)} сек</b></div>
+  `;
+
+  // ===== DATA FOR CHARTS =====
+  const counts = managers.map(m => byManager.get(m).length);
+  const avgScores = managers.map(m =>
+    avg(byManager.get(m).map(c => safeNum(c?.ai?.score,0)))
+  );
+  const goodPcts = managers.map(m => {
+    const arr = byManager.get(m);
+    const good = arr.filter(c => safeNum(c?.ai?.score,0) >= 4).length;
+    return arr.length ? (good/arr.length) * 100 : 0;
+  });
+
+  charts.push(new Chart(document.getElementById("chartCount"), {
+    type: "bar",
+    data: { labels: managers, datasets: [{ label: "Звонки", data: counts }] },
+    options: { responsive:true, plugins:{ legend:{ display:false } } }
+  }));
+
+  charts.push(new Chart(document.getElementById("chartAvg"), {
+    type: "bar",
+    data: { labels: managers, datasets: [{ label: "Средняя оценка", data: avgScores }] },
+    options: {
+      responsive:true,
+      plugins:{ legend:{ display:false } },
+      scales:{ y:{ beginAtZero:true, max:10 } }
+    }
+  }));
+
+  charts.push(new Chart(document.getElementById("chartGood"), {
+    type: "bar",
+    data: { labels: managers, datasets: [{ label: "% ≥ 4", data: goodPcts }] },
+    options: {
+      responsive:true,
+      plugins:{ legend:{ display:false } },
+      scales:{ y:{ beginAtZero:true, max:100 } }
+    }
+  }));
+
+  // ===== TABLE =====
+  tableBodyEl.innerHTML = "";
+  managers.forEach(m => {
+    const arr = byManager.get(m);
+    const cnt = arr.length;
+
+    const sArr = arr.map(c => safeNum(c?.ai?.score, 0));
+    const aScore = avg(sArr);
+
+    const good = arr.filter(c => safeNum(c?.ai?.score, 0) >= 4).length;
+    const gp = cnt ? (good / cnt) * 100 : 0;
+
+    const last = arr.map(c => c.datetime).filter(Boolean).sort().slice(-1)[0] || "";
+    const dur = avg(arr.map(c => safeNum(c?.duration_sec, 0)));
+
+    const typeCount = { "Сервис":0, "Продажи":0, "Другое":0 };
+    arr.forEach(c => {
+      const t = (c.call_type || "").toLowerCase();
+      if (t.includes("сервис")) typeCount["Сервис"]++;
+      else if (t.includes("продаж")) typeCount["Продажи"]++;
+      else typeCount["Другое"]++;
+    });
+
+    tableBodyEl.insertAdjacentHTML("beforeend", `
+      <tr>
+        <td>${esc(m)}</td>
+        <td>${cnt}</td>
+        <td class="${aScore < 4 ? "bad" : ""}">${aScore.toFixed(2)}</td>
+        <td>${gp.toFixed(1)}%</td>
+        <td>${esc(last.replace("T"," ").replace("Z",""))}</td>
+        <td>${dur.toFixed(0)}</td>
+        <td>${typeCount["Сервис"]}</td>
+        <td>${typeCount["Продажи"]}</td>
+        <td>${typeCount["Другое"]}</td>
+      </tr>
+    `);
+  });
+}
+
+    destroyCharts();
+
+    const byManager = new Map();
+    for (const c of calls) {
+      const m = (c.manager || "").trim() || "—";
+      if (!byManager.has(m)) byManager.set(m, []);
+      byManager.get(m).push(c);
+    }
+
+    const managers = Array.from(byManager.keys()).sort();
+
+    const total = calls.length;
+    const scores = calls.map(c => safeNum(c?.ai?.score, 0));
+    const avgScore = avg(scores);
+    const goodPct = total ? (calls.filter(c => safeNum(c?.ai?.score,0) >= 4).length / total) * 100 : 0;
+    const avgDur = avg(calls.map(c => safeNum(c?.duration_sec, 0)));
+
+    metricsEl.innerHTML = `
+      <div class="metric"><span>Звонков</span><b>${total}</b></div>
+      <div class="metric"><span>Средняя оценка</span><b>${avgScore.toFixed(2)}</b></div>
+      <div class="metric"><span>% ≥ 4</span><b>${goodPct.toFixed(1)}%</b></div>
+      <div class="metric"><span>Средняя длительность</span><b>${avgDur.toFixed(0)} сек</b></div>
+    `;
+
+    const counts = managers.map(m => byManager.get(m).length);
+    const avgScores = managers.map(m => avg(byManager.get(m).map(c => safeNum(c?.ai?.score,0))));
+    const goodPcts = managers.map(m => {
+      const arr = byManager.get(m);
+      const good = arr.filter(c => safeNum(c?.ai?.score,0) >= 4).length;
+      return arr.length ? (good/arr.length) * 100 : 0;
+    });
+
+    charts.push(new Chart(document.getElementById("chartCount"), {
+      type: "bar",
+      data: { labels: managers, datasets: [{ label: "Звонки", data: counts }] },
+      options: { responsive:true, plugins:{ legend:{ display:false } } }
+    }));
+
+    charts.push(new Chart(document.getElementById("chartAvg"), {
+      type: "bar",
+      data: { labels: managers, datasets: [{ label: "Средняя оценка", data: avgScores }] },
+      options: { responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, max:10 } } }
+    }));
+
+    charts.push(new Chart(document.getElementById("chartGood"), {
+      type: "bar",
+      data: { labels: managers, datasets: [{ label: "% ≥ 4", data: goodPcts }] },
+      options: { responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, max:100 } } }
+    }));
+
+    // Table
+    tableBodyEl.innerHTML = "";
+    managers.forEach(m => {
+      const arr = byManager.get(m);
+      const cnt = arr.length;
+
+      const sArr = arr.map(c => safeNum(c?.ai?.score, 0));
+      const aScore = avg(sArr);
+
+      const good = arr.filter(c => safeNum(c?.ai?.score, 0) >= 4).length;
+      const gp = cnt ? (good / cnt) * 100 : 0;
+
+      const last = arr.map(c => c.datetime).filter(Boolean).sort().slice(-1)[0] || "";
+      const dur = avg(arr.map(c => safeNum(c?.duration_sec, 0)));
+
+      const typeCount = { "Сервис":0, "Продажи":0, "Другое":0 };
+      arr.forEach(c => {
+        const t = (c.call_type || "").toLowerCase();
+        if (t.includes("сервис")) typeCount["Сервис"]++;
+        else if (t.includes("продаж")) typeCount["Продажи"]++;
+        else typeCount["Другое"]++;
+      });
+
+      tableBodyEl.insertAdjacentHTML("beforeend", `
+        <tr>
+          <td>${esc(m)}</td>
+          <td>${esc(cnt)}</td>
+          <td class="${aScore < 4 ? "bad" : ""}">${esc(aScore.toFixed(2))}</td>
+          <td>${esc(gp.toFixed(1))}%</td>
+          <td>${esc(last.replace("T"," ").replace("Z",""))}</td>
+          <td>${esc(dur.toFixed(0))}</td>
+          <td>${esc(typeCount["Сервис"])}</td>
+          <td>${esc(typeCount["Продажи"])}</td>
+          <td>${esc(typeCount["Другое"])}</td>
+        </tr>
+      `);
+    });
+  
+
+  // ===== MODAL DIALOG VIEW =====
+  function openCall(callId) {
+    const c = ALL_CALLS.find(x => String(x.call_id) === String(callId));
+    if (!c) {
+      alert("Не найден call_id: " + callId);
+      return;
+    }
+
+    modalTitleEl.textContent = `Звонок #${c.call_id}`;
+    modalMetaEl.textContent =
+      `${(c.datetime || "").replace("T"," ").replace("Z","")} • ` +
+      `${c.manager || ""} • ${c.call_type || ""} • ` +
+      `длит.: ${c.duration_sec ?? ""} сек • score: ${c.ai?.score ?? ""}`;
+
+    const dialog = Array.isArray(c.dialog) ? c.dialog : [];
+    modalBodyEl.innerHTML = dialog.length ? dialog.map(r => {
+      const who = r?.speaker || "—";
+      const txt = r?.text || "";
+      const cls = (who === "Менеджер") ? "bubble manager" : "bubble";
+      return `<div class="${cls}">
+        <div class="who">${esc(who)}</div>
+        <div>${esc(txt)}</div>
+      </div>`;
+    }).join("") : `<div class="meta">Диалог пустой</div>`;
+
+    modalBackdropEl.style.display = "flex";
+  }
+
+  function closeModal(e) {
+    if (e && e.target !== modalBackdropEl) return;
+    modalBackdropEl.style.display = "none";
+  }
+
+  // закрытие по ESC
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") modalBackdropEl.style.display = "none";
+  });
+</script>
+</body>
+</html>
