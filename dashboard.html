@@ -336,6 +336,129 @@
 
   // ===== DASHBOARD (простая версия) =====
   function buildDashboard(calls) {
+  destroyCharts();
+
+  // группировка по менеджерам
+  const byManager = new Map();
+  for (const c of calls) {
+    const raw = (c.manager || "").trim();
+    const m = raw ? raw : "—";
+    if (!byManager.has(m)) byManager.set(m, []);
+    byManager.get(m).push(c);
+  }
+
+  // ✅ ФИЛЬТР МЕНЕДЖЕРОВ
+  // - не "—"
+  // - не "неизвестный"
+  // - звонков >= 3
+  const managers = Array.from(byManager.entries())
+    .filter(([name, arr]) => {
+      const n = name.toLowerCase();
+      if (name === "—") return false;
+      if (n.includes("неизвест")) return false;
+      if (arr.length < 3) return false;
+      return true;
+    })
+    .map(([name]) => name)
+    .sort();
+
+  if (!managers.length) {
+    dashboardWrapEl.classList.remove("hidden");
+    metricsEl.innerHTML = `<div class="metric">Нет менеджеров, подходящих под условия</div>`;
+    tableBodyEl.innerHTML = "";
+    return;
+  }
+
+  // ===== METRICS (по всем звонкам периода, не по фильтру менеджеров) =====
+  const total = calls.length;
+  const scores = calls.map(c => safeNum(c?.ai?.score, 0));
+  const avgScore = avg(scores);
+  const goodPct = total ? (calls.filter(c => safeNum(c?.ai?.score,0) >= 4).length / total) * 100 : 0;
+  const avgDur = avg(calls.map(c => safeNum(c?.duration_sec, 0)));
+
+  metricsEl.innerHTML = `
+    <div class="metric"><span>Звонков</span><b>${total}</b></div>
+    <div class="metric"><span>Средняя оценка</span><b>${avgScore.toFixed(2)}</b></div>
+    <div class="metric"><span>% ≥ 4</span><b>${goodPct.toFixed(1)}%</b></div>
+    <div class="metric"><span>Средняя длительность</span><b>${avgDur.toFixed(0)} сек</b></div>
+  `;
+
+  // ===== DATA FOR CHARTS =====
+  const counts = managers.map(m => byManager.get(m).length);
+  const avgScores = managers.map(m =>
+    avg(byManager.get(m).map(c => safeNum(c?.ai?.score,0)))
+  );
+  const goodPcts = managers.map(m => {
+    const arr = byManager.get(m);
+    const good = arr.filter(c => safeNum(c?.ai?.score,0) >= 4).length;
+    return arr.length ? (good/arr.length) * 100 : 0;
+  });
+
+  charts.push(new Chart(document.getElementById("chartCount"), {
+    type: "bar",
+    data: { labels: managers, datasets: [{ label: "Звонки", data: counts }] },
+    options: { responsive:true, plugins:{ legend:{ display:false } } }
+  }));
+
+  charts.push(new Chart(document.getElementById("chartAvg"), {
+    type: "bar",
+    data: { labels: managers, datasets: [{ label: "Средняя оценка", data: avgScores }] },
+    options: {
+      responsive:true,
+      plugins:{ legend:{ display:false } },
+      scales:{ y:{ beginAtZero:true, max:10 } }
+    }
+  }));
+
+  charts.push(new Chart(document.getElementById("chartGood"), {
+    type: "bar",
+    data: { labels: managers, datasets: [{ label: "% ≥ 4", data: goodPcts }] },
+    options: {
+      responsive:true,
+      plugins:{ legend:{ display:false } },
+      scales:{ y:{ beginAtZero:true, max:100 } }
+    }
+  }));
+
+  // ===== TABLE =====
+  tableBodyEl.innerHTML = "";
+  managers.forEach(m => {
+    const arr = byManager.get(m);
+    const cnt = arr.length;
+
+    const sArr = arr.map(c => safeNum(c?.ai?.score, 0));
+    const aScore = avg(sArr);
+
+    const good = arr.filter(c => safeNum(c?.ai?.score, 0) >= 4).length;
+    const gp = cnt ? (good / cnt) * 100 : 0;
+
+    const last = arr.map(c => c.datetime).filter(Boolean).sort().slice(-1)[0] || "";
+    const dur = avg(arr.map(c => safeNum(c?.duration_sec, 0)));
+
+    const typeCount = { "Сервис":0, "Продажи":0, "Другое":0 };
+    arr.forEach(c => {
+      const t = (c.call_type || "").toLowerCase();
+      if (t.includes("сервис")) typeCount["Сервис"]++;
+      else if (t.includes("продаж")) typeCount["Продажи"]++;
+      else typeCount["Другое"]++;
+    });
+
+    tableBodyEl.insertAdjacentHTML("beforeend", `
+      <tr>
+        <td>${esc(m)}</td>
+        <td>${cnt}</td>
+        <td class="${aScore < 4 ? "bad" : ""}">${aScore.toFixed(2)}</td>
+        <td>${gp.toFixed(1)}%</td>
+        <td>${esc(last.replace("T"," ").replace("Z",""))}</td>
+        <td>${dur.toFixed(0)}</td>
+        <td>${typeCount["Сервис"]}</td>
+        <td>${typeCount["Продажи"]}</td>
+        <td>${typeCount["Другое"]}</td>
+      </tr>
+    `);
+  });
+}
+
     destroyCharts();
 
     const byManager = new Map();
@@ -423,7 +546,7 @@
         </tr>
       `);
     });
-  }
+  
 
   // ===== MODAL DIALOG VIEW =====
   function openCall(callId) {
