@@ -5,6 +5,95 @@ body {
   color:#111;
 }
 
+.login-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.login-container.hidden {
+  display: none;
+}
+
+.login-box {
+  background: white;
+  border-radius: 15px;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.3);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-box h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 32px;
+}
+
+.login-box h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 20px;
+  color: #666;
+}
+
+.login-box > div {
+  margin-bottom: 20px;
+}
+
+.login-box label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.login-box input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.login-box button {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+.login-box button:hover {
+  opacity: 0.9;
+}
+
+.error-msg {
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 10px;
+  text-align: center;
+}
+
 h1 { font-size:20px; margin-bottom:12px; }
 
 .tabs { display:flex; gap:10px; margin-bottom:12px; }
@@ -29,6 +118,37 @@ h1 { font-size:20px; margin-bottom:12px; }
   align-items:end;
 }
 
+.filters-registry {
+  background:#f8fafc;
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:16px;
+  display:flex;
+  gap:12px;
+  align-items:end;
+  flex-wrap: wrap;
+}
+
+.filters-registry > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filters-registry label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.filters-registry input,
+.filters-registry select {
+  padding: 8px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #fff;
+}
+
 button {
   padding:7px 16px;
   font-size:12px;
@@ -36,6 +156,15 @@ button {
   background:#111;
   color:#fff;
   border:0;
+  cursor:pointer;
+}
+
+select {
+  padding:7px 8px;
+  font-size:12px;
+  border-radius:10px;
+  border:1px solid #e5e7eb;
+  background:#fff;
   cursor:pointer;
 }
 
@@ -68,7 +197,15 @@ th,td {
   border-bottom:1px solid #e5e7eb;
 }
 
-th { background:#f1f5f9; }
+th { 
+  background:#f1f5f9;
+  cursor: pointer;
+  user-select: none;
+}
+
+th:hover {
+  background: #e2e8f0;
+}
 
 .hidden { display:none; }
 canvas { max-height:260px; }
@@ -77,6 +214,8 @@ canvas { max-height:260px; }
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
 }
+
+.table-wrapper { overflow-x: auto; }
 
 .metric {
   background: #f8fafc;
@@ -89,4 +228,54 @@ canvas { max-height:260px; }
   display: block;
   font-size: 20px;
   margin-top: 4px;
+}
+
+.expand-btn {
+  padding: 5px 10px;
+  font-size: 11px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.expand-btn:hover {
+  background: #333;
+}
+
+.dialog-content {
+  margin-top: 8px;
+  padding: 8px;
+  background: #f8f9fa;
+  border-left: 3px solid #111;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #111;
+}
+
+.dialog-content div {
+  margin-bottom: 6px;
+}
+
+.dialog-content b {
+  color: #111;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  body { padding: 10px; }
+  h1 { font-size: 18px; }
+  .tabs { gap:8px; overflow-x:auto; }
+  .tab { padding:10px 14px; font-size:14px; }
+  .filters { flex-direction: column; align-items:stretch; }
+  .filters > div { width:100%; }
+  button { padding:10px 18px; font-size:14px; }
+  .grid { grid-template-columns: 1fr; }
+  canvas { max-height:200px; }
+  .card { padding:12px; }
+  table { font-size:13px; }
 }

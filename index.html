@@ -2,27 +2,47 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Аквилон — Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<div id="loginForm" class="login-container">
+  <div class="login-box">
+    <h1>Аквилон</h1>
+    <h2>Вход</h2>
+    <div>
+      <label>Логин</label>
+      <input type="text" id="username" placeholder="admin">
+    </div>
+    <div>
+      <label>Пароль</label>
+      <input type="password" id="password" placeholder="Пароль">
+    </div>
+    <button onclick="login()">Войти</button>
+    <div id="errorMsg" class="error-msg"></div>
+  </div>
+</div>
+
+<div id="mainContent" class="hidden">
+
 <h1>Аквилон — Call Center Dashboard</h1>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('dashboard')">Dashboard</div>
-  <div class="tab" onclick="switchTab('registry')">Реестр звонков</div>
+  <div class="tab active" onclick="switchTab('dashboard', this)">Dashboard</div>
+  <div class="tab" onclick="switchTab('registry', this)">Реестр звонков</div>
 </div>
 
-<div class="filters">
+<div id="dashboardFilters" class="filters">
   <div>
     <label>Дата с</label>
-    <input type="date" id="dateFrom">
+    <input type="date" id="dashboardDateFrom">
   </div>
   <div>
     <label>Дата по</label>
-    <input type="date" id="dateTo">
+    <input type="date" id="dashboardDateTo">
   </div>
   <button id="btnShow" onclick="showDashboard()" disabled>Показать</button>
   <span id="loadHint"></span>
@@ -55,7 +75,8 @@
   <!-- Таблица -->
   <div class="card">
     <h2>Аналитика по менеджерам</h2>
-    <table>
+    <div class="table-wrapper">
+      <table>
       <thead>
         <tr>
           <th>Менеджер</th>
@@ -65,7 +86,8 @@
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
-    </table>
+      </table>
+    </div>
   </div>
 
 </div>
@@ -73,14 +95,38 @@
 
 <div id="registry" class="hidden">
   <div class="card">
-    <table>
-      <thead><tr><th>Дата</th><th>Менеджер</th><th>Тип</th><th>Длит.</th><th>Оценка</th></tr></thead>
-      <tbody id="registryBody"></tbody>
-    </table>
+    <div class="filters-registry">
+      <div>
+        <label>Дата с</label>
+        <input type="date" id="dateFrom">
+      </div>
+      <div>
+        <label>Дата по</label>
+        <input type="date" id="dateTo">
+      </div>
+      <div>
+        <label>Менеджер</label>
+        <select id="filterManager">
+          <option value="">Все</option>
+          <option value="Анастасия">Анастасия</option>
+          <option value="Светлана">Светлана</option>
+          <option value="Жанна">Жанна</option>
+          <option value="Ертай">Ертай</option>
+          <option value="Нургуль">Нургуль</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th onclick="sortRegistry('datetime')">Дата ↕</th><th onclick="sortRegistry('manager')">Менеджер ↕</th><th onclick="sortRegistry('type')">Тип ↕</th><th onclick="sortRegistry('duration')">Длит. ↕</th><th onclick="sortRegistry('score')">Оценка ↕</th><th>Диалог</th></tr></thead>
+        <tbody id="registryBody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
+</div>
 
-<script src="dashboard.js"></script>
+<script src="dashboard.js" defer></script>
 </body>
 </html>
