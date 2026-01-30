@@ -1,8 +1,8 @@
 body {
   font-family: Inter, Arial, sans-serif;
-  background:#f5f6fa;
-  padding:16px;
-  color:#111;
+  background: #f5f6fa;
+  padding: 16px;
+  color: #111;
 }
 
 .login-container {
@@ -26,7 +26,7 @@ body {
   background: white;
   border-radius: 15px;
   padding: 40px;
-  box-shadow: 0 10px 40px rgba(0,0,0,.3);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   width: 100%;
   max-width: 400px;
 }
@@ -94,38 +94,48 @@ body {
   text-align: center;
 }
 
-h1 { font-size:20px; margin-bottom:12px; }
-
-.tabs { display:flex; gap:10px; margin-bottom:12px; }
-.tab {
-  background:#fff;
-  border:1px solid #e5e7eb;
-  padding:8px 12px;
-  border-radius:10px;
-  cursor:pointer;
-  font-size:12px;
+h1 {
+  font-size: 20px;
+  margin-bottom: 12px;
 }
-.tab.active { border-color:#111; font-weight:600; }
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.tab {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.tab.active {
+  border-color: #111;
+  font-weight: 600;
+}
 
 .filters {
-  background:#fff;
-  border-radius:10px;
-  padding:12px;
-  margin-bottom:16px;
-  box-shadow:0 6px 18px rgba(0,0,0,.08);
-  display:flex;
-  gap:12px;
-  align-items:end;
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  display: flex;
+  gap: 12px;
+  align-items: end;
 }
 
 .filters-registry {
-  background:#f8fafc;
-  border-radius:10px;
-  padding:12px;
-  margin-bottom:16px;
-  display:flex;
-  gap:12px;
-  align-items:end;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: end;
   flex-wrap: wrap;
 }
 
@@ -150,55 +160,62 @@ h1 { font-size:20px; margin-bottom:12px; }
 }
 
 button {
-  padding:7px 16px;
-  font-size:12px;
-  border-radius:10px;
-  background:#111;
-  color:#fff;
-  border:0;
-  cursor:pointer;
+  padding: 7px 16px;
+  font-size: 12px;
+  border-radius: 10px;
+  background: #111;
+  color: #fff;
+  border: 0;
+  cursor: pointer;
 }
 
 select {
-  padding:7px 8px;
-  font-size:12px;
-  border-radius:10px;
-  border:1px solid #e5e7eb;
-  background:#fff;
-  cursor:pointer;
+  padding: 7px 8px;
+  font-size: 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
 }
 
-.grid { display:grid; gap:16px; }
+.grid {
+  display: grid;
+  gap: 16px;
+}
 
 .card {
-  background:#fff;
-  border-radius:10px;
-  padding:14px;
-  box-shadow:0 6px 18px rgba(0,0,0,.08);
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
 .metric {
-  background:#f8fafc;
-  padding:10px;
-  border-radius:8px;
-  font-size:12px;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
 }
 
-.metric b { font-size:16px; display:block; }
+.metric b {
+  font-size: 16px;
+  display: block;
+}
 
 table {
-  width:100%;
-  border-collapse:collapse;
-  font-size:12px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
 }
 
-th,td {
-  padding:8px;
-  border-bottom:1px solid #e5e7eb;
+th,
+td {
+  padding: 8px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-th { 
-  background:#f1f5f9;
+th {
+  background: #f1f5f9;
   cursor: pointer;
   user-select: none;
 }
@@ -207,15 +224,21 @@ th:hover {
   background: #e2e8f0;
 }
 
-.hidden { display:none; }
-canvas { max-height:260px; }
+.hidden {
+  display: none;
+}
+canvas {
+  max-height: 260px;
+}
 .metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
 }
 
-.table-wrapper { overflow-x: auto; }
+.table-wrapper {
+  overflow-x: auto;
+}
 
 .metric {
   background: #f8fafc;
@@ -265,17 +288,80 @@ canvas { max-height:260px; }
   color: #111;
 }
 
+/* Стили для столбца рекомендаций */
+.recommendation-cell {
+  max-width: 300px;
+  word-wrap: break-word;
+  white-space: normal;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 8px !important;
+  position: relative;
+}
+
+/* Стили для кликабельных рекомендаций */
+.recommendation-expandable {
+  cursor: pointer;
+  color: #333;
+  border-bottom: 1px dotted #667eea;
+  transition: all 0.2s ease;
+  display: inline-block;
+  width: 100%;
+}
+
+.recommendation-expandable:hover {
+  color: #667eea;
+  border-bottom-color: #4a5fc7;
+}
+
+.recommendation-expandable.expanded {
+  border-bottom: 1px solid #667eea;
+  background-color: #f8f9ff;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.hidden {
+  display: none !important;
+}
+
 /* Mobile adjustments */
 @media (max-width: 600px) {
-  body { padding: 10px; }
-  h1 { font-size: 18px; }
-  .tabs { gap:8px; overflow-x:auto; }
-  .tab { padding:10px 14px; font-size:14px; }
-  .filters { flex-direction: column; align-items:stretch; }
-  .filters > div { width:100%; }
-  button { padding:10px 18px; font-size:14px; }
-  .grid { grid-template-columns: 1fr; }
-  canvas { max-height:200px; }
-  .card { padding:12px; }
-  table { font-size:13px; }
+  body {
+    padding: 10px;
+  }
+  h1 {
+    font-size: 18px;
+  }
+  .tabs {
+    gap: 8px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filters > div {
+    width: 100%;
+  }
+  button {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  canvas {
+    max-height: 200px;
+  }
+  .card {
+    padding: 12px;
+  }
+  table {
+    font-size: 13px;
+  }
 }
