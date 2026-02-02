@@ -124,6 +124,7 @@ const FOCUS_MANAGERS = new Set([
   "Жанна",
   "Ертай",
   "Нургуль",
+  "Марина",
 ]);
 
 /* ===================== НОРМАЛИЗАЦИЯ ===================== */
@@ -135,7 +136,13 @@ function normalizeManagerName(raw) {
     .trim();
 
   if (!name) return "";
-
+   if (
+    name.includes("мар") ||
+    name.includes("мари") ||
+    name.includes("рина")
+  ) {
+    return "Марина";
+  }
   if (/(гул|гуль|кул|куль|голь)/.test(name)) return "Нургуль";
   if (["анна", "аня"].includes(name)) return "Анна";
   if (name.startsWith("анаст") || name.startsWith("наст")) return "Анастасия";
